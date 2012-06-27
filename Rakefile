@@ -22,6 +22,8 @@ task :checkout do
   # Fix gyp trying to build platform-linux on FreeBSD 9 and FreeBSD 10.
   # Based on: https://chromiumcodereview.appspot.com/10079030/patch/1/2
   sh "patch -N -p0 -d vendor/v8 < patches/add-freebsd9-and-freebsd10-to-gyp-GetFlavor.patch"
+  # Fix scons to work with MinGW
+  sh "patch -N -p0 -d vendor/v8 < patches/scons_mingw.patch"
 end
 
 desc "compile v8 via the ruby extension mechanism"
