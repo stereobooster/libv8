@@ -29,7 +29,6 @@ task :compile do
   sh "ruby ext/libv8/extconf.rb"
 end
 
-
 desc "manually invoke the GYP compile. Useful for seeing debug output"
 task :manual_compile do
   require File.expand_path '../ext/libv8/arch.rb', __FILE__
@@ -39,29 +38,67 @@ task :manual_compile do
   end
 end
 
-def get_binary_gemspec(platform = RUBY_PLATFORM)
-  gemspec = eval(File.read('libv8.gemspec'))
-  gemspec.platform = Gem::Platform.new(platform)
-  gemspec
+
+desc "build all binary gems"
+task :binary do
 end
 
-begin 
-  binary_gem_name = File.basename get_binary_gemspec.cache_file
-rescue
-  binary_gem_name = ''
+require File.expand_path '../ext/libv8/arch.rb', __FILE__
+require File.expand_path '../ext/libv8/compiler.rb', __FILE__
+require File.expand_path '../ext/libv8/build.rb', __FILE__
+
+require 'rubygems'
+GEMSPEC = Gem::Specification.load('libv8.gemspec')
+
+# what about MacOS ?
+# 'x86-mswin32-60'
+platfroms = ['x86-mingw32', 'i686-linux']
+
+if Gem::Platform.new(RUBY_PLATFORM).cpu != "x86"
+  platfroms += ['x64-linux']
 end
 
-desc "build a binary gem #{binary_gem_name}"
-task :binary => :compile do
-  gemspec = get_binary_gemspec
+platfroms.each do |platform|
+  desc "build #{platform}"
+  task "binary:#{platform}" do
+    gemspec = GEMSPEC.dup 
+    gemspec.platform = Gem::Platform.new(platform)
+    # binary_gem_name = File.basename gemspec.cache_file
 
-  # We don't need most things for the binary
-  gemspec.files = ['lib/libv8.rb', 'ext/libv8/arch.rb', 'lib/libv8/version.rb']
-  # V8
-  gemspec.files += Dir['vendor/v8/include/*']
-  gemspec.files += Dir['vendor/v8/out/**/*.a']
-  FileUtils.mkdir_p 'pkg'
-  FileUtils.mv(Gem::Builder.new(gemspec).build, 'pkg')
+    target_os = if platform =~ /mingw|mswin/
+      "win32"  
+    end
+
+    target_arch = if gemspec.platform.cpu == "x86"
+      "ia32"
+    else
+      "x64"
+    end
+
+    compiler = if platform =~ /mingw/
+      # mingw
+      Libv8::Compiler.mingw_gcc_executable
+    else
+      # gcc
+      Libv8::Compiler.compiler
+    end
+
+    res = Libv8::Build.build(
+      :target_arch => target_arch,
+      :target_os => target_os,
+      :compiler => compiler,
+      :make => Libv8::Make.make)
+    abort if res != 0
+
+    # We don't need most things for the binary
+    gemspec.files = ['lib/libv8.rb', 'ext/libv8/arch.rb', 'lib/libv8/version.rb']
+    # V8
+    gemspec.files += Dir['vendor/v8/include/*']
+    gemspec.files += Dir['vendor/v8/out/**/*.a']
+    FileUtils.mkdir_p 'pkg'
+    FileUtils.mv(Gem::Builder.new(gemspec).build, 'pkg')
+  end
+  Rake::Task[:binary].prerequisites << "binary:#{platform}"
 end
 
 desc "clean up artifacts of the build"

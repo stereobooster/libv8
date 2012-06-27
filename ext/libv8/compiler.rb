@@ -42,5 +42,23 @@ module Libv8
       return nil unless $?.success?
       compiler.chomp
     end
+
+    def mingw_gcc_executable
+      return @mingw_gcc_executable if @mingw_gcc_executable
+
+      # grab the paths defined in the environment
+      paths = ENV['PATH'].split(File::PATH_SEPARATOR)
+
+      # the pattern to look into (captures *nix and windows executables)
+      pattern = "i?86*mingw*gcc{,.*}"
+
+      @mingw_gcc_executable = paths.find do |path|
+        # cleanup paths before globbing
+        gcc = Dir.glob("#{File.expand_path(path)}/#{pattern}").first
+        break gcc if gcc
+      end
+
+      @mingw_gcc_executable
+    end
   end
 end
