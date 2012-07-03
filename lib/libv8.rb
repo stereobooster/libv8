@@ -1,5 +1,5 @@
 require 'mkmf'
-require 'libv8/arch'
+require File.expand_path('../../ext/libv8/arch', __FILE__)
 module Libv8
 
   module_function
