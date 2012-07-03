@@ -68,7 +68,6 @@ task :binary => :compile do
   gemspec.files += Dir['vendor/v8/out/**/*.a']
   # SCons build
   gemspec.files += Dir['vendor/v8/libv8.a']
-  gemspec.files += Dir['vendor/v8/v8.dll']
   FileUtils.mkdir_p 'pkg'
   FileUtils.mv(Gem::Builder.new(gemspec).build, 'pkg')
 end

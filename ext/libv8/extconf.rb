@@ -16,7 +16,7 @@ end
 
 Dir.chdir(File.expand_path '../../../vendor/v8', __FILE__) do
   if Libv8.mingw?
-    puts `scons os=win32 toolchain=gcc library=shared`
+    puts `scons os=win32 toolchain=gcc library=static`
   else
     puts `env CXX=#{compiler} LINK=#{compiler} #{make} #{libv8_arch}.release GYPFLAGS="-Dhost_arch=#{libv8_arch}"`
   end
